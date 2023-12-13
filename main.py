@@ -9,6 +9,7 @@ import deepl
 
 load_dotenv()
 translator = deepl.Translator(os.getenv("DEEPL_API_KEY"))
+p = pinyin_jyutping.PinyinJyutping()
 
 app = FastAPI()
 
@@ -21,6 +22,22 @@ def read_root():
 
 @app.get("/pinyin/{hanzi}", response_class=PlainTextResponse)
 def read_item(hanzi: Union[str, None]):
+
+    output_pinyin = p.pinyin(hanzi, spaces=True)
+
+    response = """{}\n{}""".format(hanzi, output_pinyin)
+    return response
+
+@app.get("/translate/{hanzi}", response_class=PlainTextResponse)
+def translate_item(hanzi: Union[str, None]):
+
+    translation = translator.translate_text(hanzi, source_lang="ZH", target_lang="EN-GB")
+    
+    response = """{}\n{}""".format(hanzi, translation)
+    return response
+
+@app.get("/pinyin-translate/{hanzi}", response_class=PlainTextResponse)
+def pinyin_translate_item(hanzi: Union[str, None]):
 
     p = pinyin_jyutping.PinyinJyutping()
     output_pinyin = p.pinyin(hanzi, spaces=True)
