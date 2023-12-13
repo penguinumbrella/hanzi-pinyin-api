@@ -1,8 +1,14 @@
 from typing import Union
-from fastapi import FastAPI, Security, HTTPException
+
+from fastapi import FastAPI, Security, HTTPException, Request
 from fastapi.security.api_key import APIKeyHeader
-from starlette.status import HTTP_403_FORBIDDEN
 from fastapi.responses import PlainTextResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from starlette.status import HTTP_403_FORBIDDEN
+
 from dotenv import load_dotenv
 import os
 
@@ -18,6 +24,10 @@ API_KEY_NAME = "access_token"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 app = FastAPI()
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
 
 class CustomPlainTextResponse(PlainTextResponse):
     media_type = "text/plain; charset=utf-8"
@@ -31,11 +41,13 @@ def get_api_key(api_key_header: str = Security(api_key_header)):
         )
 
 @app.get("/")
-def read_root(api_key: str = Security(get_api_key)):
+@limiter.limit("10/minute")
+def read_root(request: Request, api_key: str = Security(get_api_key)):
     return {"Hello": "World"}
 
 @app.get("/pinyin/{hanzi}", response_class=PlainTextResponse)
-def read_item(hanzi: Union[str, None], api_key: str = Security(get_api_key)):
+@limiter.limit("10/minute")
+def read_item(hanzi: Union[str, None], request: Request, api_key: str = Security(get_api_key)):
 
     output_pinyin = p.pinyin(hanzi, spaces=True)
 
@@ -43,7 +55,8 @@ def read_item(hanzi: Union[str, None], api_key: str = Security(get_api_key)):
     return response
 
 @app.get("/translate/{hanzi}", response_class=PlainTextResponse)
-def translate_item(hanzi: Union[str, None]):
+@limiter.limit("10/minute")
+def translate_item(hanzi: Union[str, None], request: Request, api_key: str = Security(get_api_key)):
 
     translation = translator.translate_text(hanzi, source_lang="ZH", target_lang="EN-GB")
     
@@ -51,7 +64,8 @@ def translate_item(hanzi: Union[str, None]):
     return response
 
 @app.get("/pinyin-translate/{hanzi}", response_class=PlainTextResponse)
-def pinyin_translate_item(hanzi: Union[str, None]):
+@limiter.limit("10/minute")
+def pinyin_translate_item(hanzi: Union[str, None], request: Request, api_key: str = Security(get_api_key)):
 
     p = pinyin_jyutping.PinyinJyutping()
     output_pinyin = p.pinyin(hanzi, spaces=True)
