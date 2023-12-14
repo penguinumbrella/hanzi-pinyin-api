@@ -27,7 +27,7 @@ translator = deepl.Translator(os.getenv("DEEPL_API_KEY"))
 p = pinyin_jyutping.PinyinJyutping()
 
 API_KEY = os.getenv("APP_API_KEY")
-API_KEY_NAME = "access_token"
+API_KEY_NAME = "x-access-token"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 app = FastAPI()
