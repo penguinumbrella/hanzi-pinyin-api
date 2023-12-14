@@ -1,5 +1,6 @@
 from typing import Union, Callable
 import logging
+from pydantic import BaseModel, ValidationError, Field
 
 from fastapi import FastAPI, Security, HTTPException, Request
 from fastapi.security.api_key import APIKeyHeader
@@ -38,6 +39,9 @@ app.add_middleware(SlowAPIMiddleware)
 
 class CustomPlainTextResponse(PlainTextResponse):
     media_type = "text/plain; charset=utf-8"
+
+class LargeText(BaseModel):
+    text: str = Field(..., description="Hanzi text to translate")
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == API_KEY:
@@ -82,6 +86,46 @@ def pinyin_translate_item(hanzi: Union[str, None], request: Request, api_key: st
     response = """{}\n{}\n{}""".format(hanzi, output_pinyin, translation)
     return response
 
+@app.post("/pinyin-translate-bulk", response_class=PlainTextResponse)
+@limiter.limit("10/minute")
+def pinyin_translate_bulk_item(request: Request, data: LargeText, api_key: str = Security(get_api_key)):
+
+    try:
+        text = data.text
+        combined_text = text.replace('\n', ' | ')
+        
+        p = pinyin_jyutping.PinyinJyutping()
+        output_pinyin = p.pinyin(combined_text, spaces=True)
+        translation = translator.translate_text(combined_text, source_lang="ZH", target_lang="EN-GB")
+
+        # Split the strings into lists of elements
+        elements1 = combined_text.split(" | ")
+        elements2 = output_pinyin.split(" | ")
+        elements3 = translation.text.split(" | ")
+
+        for idx, e in enumerate(elements1):
+            e = e.strip()
+            elements1[idx] = e + ' \n'
+        
+        for idx, e in enumerate(elements2):
+            e = e.strip()
+            elements2[idx] = e + ' \n'
+
+        for idx, e in enumerate(elements3):
+            e = e.strip()
+            elements3[idx] = e + ' \n'
+
+        # Combine the elements from both lists
+        combined_elements = [f"{e1} {e2} {e3}" for e1, e2, e3 in zip(elements1, elements2, elements3)]
+
+        # Join the combined elements back into a single string
+        result = "\n".join(combined_elements)
+
+        return str(result)
+    
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str("Invalid input data. Error: "+e))
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next: Callable):
     app_logger.info(f"Request {request.method} {request.url}")
@@ -90,6 +134,7 @@ async def log_requests(request: Request, call_next: Callable):
     return response
 
 if __name__ == "__main__":
+    
     p = pinyin_jyutping.PinyinJyutping()
     output_pinyin = p.pinyin("你好")
     print(output_pinyin)
