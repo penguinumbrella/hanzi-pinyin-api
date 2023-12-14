@@ -81,10 +81,6 @@ def pinyin_translate_item(hanzi: Union[str, None], request: Request, api_key: st
     response = """{}\n{}\n{}""".format(hanzi, output_pinyin, translation)
     return response
 
-@app.get("/testheaders")
-async def test_headers(request: Request):
-    return {"headers": dict(request.headers)}
-
 @app.middleware("http")
 async def log_requests(request: Request, call_next: Callable):
     app_logger.info(f"Request {request.method} {request.url}")
