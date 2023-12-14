@@ -47,10 +47,11 @@ def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_403_FORBIDDEN, detail="Invalid API Key"
         )
 
-@app.get("/")
+@app.get("/", response_class=PlainTextResponse)
 @limiter.limit("10/minute")
 def read_root(request: Request):
-    return {"Hello": "World"}
+    response = """{}\n{}\n{}""".format("你好世界", "nǐ hǎo shì jiè", "Hello world.")
+    return response
 
 @app.get("/pinyin/{hanzi}", response_class=PlainTextResponse)
 @limiter.limit("10/minute")
