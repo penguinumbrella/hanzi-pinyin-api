@@ -49,7 +49,7 @@ def get_api_key(api_key_header: str = Security(api_key_header)):
 
 @app.get("/")
 @limiter.limit("10/minute")
-def read_root(request: Request, api_key: str = Security(get_api_key)):
+def read_root(request: Request):
     return {"Hello": "World"}
 
 @app.get("/pinyin/{hanzi}", response_class=PlainTextResponse)
