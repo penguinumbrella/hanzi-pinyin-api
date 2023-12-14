@@ -1,4 +1,5 @@
-from typing import Union
+from typing import Union, Callable
+import logging
 
 from fastapi import FastAPI, Security, HTTPException, Request
 from fastapi.security.api_key import APIKeyHeader
@@ -14,6 +15,12 @@ import os
 
 import pinyin_jyutping
 import deepl
+
+app_logger = logging.getLogger("myapp_logger")
+logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()]
+                    )
 
 load_dotenv()
 translator = deepl.Translator(os.getenv("DEEPL_API_KEY"))
@@ -72,6 +79,13 @@ def pinyin_translate_item(hanzi: Union[str, None], request: Request, api_key: st
     translation = translator.translate_text(hanzi, source_lang="ZH", target_lang="EN-GB")
 
     response = """{}\n{}\n{}""".format(hanzi, output_pinyin, translation)
+    return response
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next: Callable):
+    app_logger.info(f"Request {request.method} {request.url}")
+    response = await call_next(request)
+    app_logger.info(f"Response status_code: {response.status_code}")
     return response
 
 if __name__ == "__main__":
