@@ -92,16 +92,19 @@ def pinyin_translate_bulk_item(request: Request, data: LargeText, api_key: str =
 
     try:
         text = data.text
-        combined_text = text.replace('\n', ' | ')
+        combined_text = text
+        #combined_text = text.replace('\n', ' | ')
         
         p = pinyin_jyutping.PinyinJyutping()
         output_pinyin = p.pinyin(combined_text, spaces=True)
         translation = translator.translate_text(combined_text, source_lang="ZH", target_lang="EN-GB")
 
         # Split the strings into lists of elements
-        elements1 = combined_text.split(" | ")
-        elements2 = output_pinyin.split(" | ")
-        elements3 = translation.text.split(" | ")
+        #split_character = " | "
+        split_character = "\n"
+        elements1 = combined_text.split(split_character)
+        elements2 = output_pinyin.split(split_character)
+        elements3 = translation.text.split(split_character)
 
         for idx, e in enumerate(elements1):
             e = e.strip()
