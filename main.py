@@ -27,7 +27,8 @@ load_dotenv()
 translator = deepl.Translator(os.getenv("DEEPL_API_KEY"))
 p = pinyin_jyutping.PinyinJyutping()
 
-API_KEY = os.getenv("APP_API_KEY")
+api_keys_env = {k: v for k, v in os.environ.items() if k.startswith('APP_API_KEY_')}
+API_KEYS = {value.split(':')[0]: value.split(':')[1] for value in api_keys_env.values()}
 API_KEY_NAME = "x-access-token"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
@@ -44,8 +45,9 @@ class LargeText(BaseModel):
     text: str = Field(..., description="Hanzi text to translate")
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
-    if api_key_header == API_KEY:
-        return api_key_header
+    api_key = API_KEYS.get(api_key_header)
+    if api_key:
+        return api_key
     else:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="Invalid API Key"
@@ -131,7 +133,10 @@ def pinyin_translate_bulk_item(request: Request, data: LargeText, api_key: str =
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next: Callable):
-    app_logger.info(f"Request {request.method} {request.url}")
+    api_key = request.headers.get(API_KEY_NAME)
+    user_id = API_KEYS.get(api_key, "Unknown")
+    app_logger.info(f"Request {request.method} {request.url} by User ID: {user_id}")
+    
     response = await call_next(request)
     app_logger.info(f"Response status_code: {response.status_code}")
     return response

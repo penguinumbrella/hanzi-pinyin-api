@@ -11,10 +11,14 @@ This is a simple REST API that translates Hanzi Chinese characters to Pinyin. It
 2. Install the requirements: `pip install -r requirements.txt`
 3. Create a `.env` file in the root directory and add the following variables:
 ```
-APP_API_KEY=<your-api-key>
+APP_API_KEY_1=<your-api-key>:<user_alias>
+APP_API_KEY_2=<your-api-key>:<user_alias>
 DEEPL_API_KEY=<your-deepl-api-key>
 ```
 - replace `<your-api-key>` with a secure random string of your choice. This will be used to authenticate requests to the API.
+- Note: `<user_alias>` can be any string and can be used as an identifier of who is calling your API when looking at the API logs.
+e.g. `2lkmglk23m:sam`
+- `APP_API_KEY_2` and upwards can be used to add additional API keys. You can add as many as you like.
 - replace `<your-deepl-api-key>` with your created API key from DeepL.
 4. Run the app: `python main.py`
 5. The app will run by default on `http://127.0.0.1:8000`
