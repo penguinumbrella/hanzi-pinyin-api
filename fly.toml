@@ -1,0 +1,33 @@
+app = "hanzi-pinyin-api"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
+  APP_API_KEY="q1w2e3r4t5y6"
+
+[mounts]
+  source="data"
+  destination="/data"
+
+[experimental]
+  auto_rollback = true
+
+[[services]]
+  internal_port = 8000
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+[deploy]
+  release_command = "echo Deploying..."
+  strategy = "rolling"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[vm]
+  size = "shared-cpu-1x"  # You can upgrade to dedicated-cpu-1x if needed
+  memory = "1536MB"        # 1.5GB memory limit
